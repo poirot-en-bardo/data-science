@@ -71,7 +71,7 @@ head(test)
 
 ```{r}
 library (tree)
-tree1 <- tree(sex ~ ., data = train )
+tree1 <- tree(age_class ~ ., data = train )
 tree1.pruned <- prune.tree(tree1, best = 3)
 plot(tree1)
 text(tree1) # gives a graphical representation description of the model
@@ -85,8 +85,8 @@ text(tree1.pruned)
 ```{r}
 tree1.pred <- predict(tree1, test, type ="class")
 prune.pred <- predict(tree1.pruned, test, type ="class")
-table.tree <- table (tree1.pred, test$sex)
-table.pruned <- table (prune.pred, test$sex)
+table.tree <- table (tree1.pred, test$age_class)
+table.pruned <- table (prune.pred, test$age_class)
 accuracy.tree <- sum(diag(table.tree)) / sum(table.tree)
 accuracy.pruned <- sum(diag(table.pruned)) / sum(table.pruned)
 accuracy.tree
@@ -99,11 +99,11 @@ accuracy.pruned
 ```{r}
 library(randomForest) 
 m = as.integer(sqrt(ncol(data) - 1))
-forest <- randomForest(sex ~ ., data=train, mtry=m, importance=TRUE)
+forest <- randomForest(age_class ~ ., data=train, mtry=m, importance=TRUE)
 forest
 
 yhat.bag <- predict(forest, newdata=test)
-table <- table (yhat.bag, test$sex)
+table <- table (yhat.bag, test$age_class)
 accuracy.tree <- sum(diag(table)) / sum(table)
 accuracy.tree
 ```
@@ -113,13 +113,13 @@ accuracy.tree
 ```{r}
 library(e1071)
 # Train the SVM model on the 'Sex' variable
-svm_model <- svm(sex ~ ., data = train, type = 'C-classification', kernel = 'radial')
+svm_model <- svm(age_class ~ ., data = train, type = 'C-classification', kernel = 'radial')
 
 # Make predictions on the test set
 predictions <- predict(svm_model, test[,-1])  # Exclude the target variable for prediction
 
 # Evaluate the model's performance with a confusion matrix
-conf_matrix <- table(predictions, test$sex)
+conf_matrix <- table(predictions, test$age_class)
 print(conf_matrix)
 
 # Calculate overall accuracy
@@ -132,18 +132,18 @@ print(paste("Overall Accuracy:", accuracy))
 ```{r}
 library(nnet)
 set.seed(1)
-nn.abalone <- nnet (sex ~., data = train, size = 10) #size of the hidden layer ( 1 layer with 3 units);
+nn.abalone <- nnet (age_class ~., data = train, size = 10, decay = 0.1, maxit = 500) #size of the hidden layer ( 1 layer with 3 units);
 #it will know from the data if it's regression or if it's a factor with how many classes
 summary (nn.abalone)
 nn.train.pred <- predict (nn.abalone, train, type="class") #identify it as class, otherwise it will give a numeric value
 # nn.cancer.predict.train <- as.factor (nn.cancer.predict.train)
-table <- table(nn.train.pred, test$sex)
+table <- table(nn.train.pred, test$age_class)
 table
 accuracy <- sum(diag(table)) / sum(table)
 accuracy
 
 nn.abalone.predict.test <- predict(nn.abalone, data = test, type="class") 
-table.test <- table(nn.abalone.predict.test, test$sex)
+table.test <- table(nn.abalone.predict.test, test$age_class)
 table.test
 accuracy.test <- sum(diag(table.test)) / sum(table.test)
 accuracy.test
@@ -153,20 +153,63 @@ accuracy.test
 ```{r}
 
 # Train the neural network with multiple hidden layers
-nn.abalone <- nnet(sex ~ ., data = train, size = c(4, 6, 4, 2)) 
+nn.abalone <- nnet(age_class ~ ., data = train, size = c(4, 6, 4, 2)) 
 summary(nn.abalone)
 
 # Make predictions on the training set
 nn.train.pred <- predict(nn.abalone, train, type = "class")
-table_train <- table(nn.train.pred, train$sex)
+table_train <- table(nn.train.pred, train$age_class)
 accuracy_train <- sum(diag(table_train)) / sum(table_train)
 print(paste("Training Accuracy:", accuracy_train))
 
 # Make predictions on the test set
 nn.abalone.predict.test <- predict(nn.abalone, data = test, type = "class") 
-table_test <- table(nn.abalone.predict.test, test$sex)
+table_test <- table(nn.abalone.predict.test, test$age_class)
 accuracy_test <- sum(diag(table_test)) / sum(table_test)
 print(paste("Test Accuracy:", accuracy_test))
 
 ```
+
+```{r}
+library(keras)
+
+num_features <- ncol(data.train) - 1
+num_classes <- length(unique(data.train$age_class))
+
+# Build the model
+model <- keras_model_sequential() %>%
+  layer_dense(units = 10, input_shape = c(7), name = "Input_Layer") %>%
+  layer_activation('relu') %>% 
+  layer_dense(units = 6, name = "Hidden_Layer_1") %>%
+  layer_activation('relu') %>% 
+  layer_dense(units = num_classes, name = "Output_Layer")%>%
+  layer_activation('softmax')
+
+
+model %>% compile(
+  loss = 'categorical_crossentropy',
+  optimizer = 'adam',
+  metrics = 'accuracy'
+)
+
+# Prepare labels as categorical
+train_labels <- to_categorical(data.train$age_class)
+test_labels <- to_categorical(data.test$age_class)
+
+# Fit the model
+history <- model %>% fit(
+  as.matrix(train[-1]), train_labels,
+  epochs = 100,
+  batch_size = 32,
+  validation_split = 0.2
+)
+
+# Evaluate the model
+score_train <- model %>% evaluate(as.matrix(train[-1]), train_labels)
+score_test <- model %>% evaluate(as.matrix(test[-1]), test_labels)
+cat('Training Accuracy:', score_train$accuracy, "\n")
+cat('Test Accuracy:', score_test$accuracy, "\n")
+
+```
+
 
