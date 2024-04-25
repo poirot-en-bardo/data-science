@@ -31,7 +31,7 @@ ggplot(data = data, aes(x = rings)) +
 
 ```{r}
 # Create a new column 'age_class' for age bins
-data$age_class <- cut(data$rings, breaks = c(0, 5, 10, 15, 20, Inf), labels = c("1", "2", "3", "4", "5"))
+data$age_class <- cut(data$rings, breaks = c(0, 10, 15, Inf), labels = c("1", "2", "3"))
 
 # Verify the new column
 table(data$age_class)
@@ -116,7 +116,7 @@ library(e1071)
 svm_model <- svm(age_class ~ ., data = train, type = 'C-classification', kernel = 'radial')
 
 # Make predictions on the test set
-predictions <- predict(svm_model, test[,-1])  # Exclude the target variable for prediction
+predictions <- predict(svm_model, test[,-class_col])  # Exclude the target variable for prediction
 
 # Evaluate the model's performance with a confusion matrix
 conf_matrix <- table(predictions, test$age_class)
