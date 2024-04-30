@@ -112,7 +112,7 @@ accuracy.tree
 
 ```{r}
 library(e1071)
-# Train the SVM model on the 'Sex' variable
+# Train the SVM model on the 'age_class' variable
 svm_model <- svm(age_class ~ ., data = train, type = 'C-classification', kernel = 'radial')
 
 # Make predictions on the test set
